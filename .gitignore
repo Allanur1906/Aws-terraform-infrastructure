@@ -1,0 +1,25 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.swp
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl.backup
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.secret
+credentials
+
+# System files
+.DS_Store
+*.log
