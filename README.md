@@ -16,48 +16,53 @@ The infrastructure is deployed in AWS Stockholm (`eu-north-1`) across two Availa
 ```mermaid
 flowchart TB
     USER(["Internet Users"])
+    IGW["Internet Gateway"]
 
-    subgraph AWS["AWS Cloud - eu-north-1"]
-        IGW["Internet Gateway"]
+    subgraph VPC["VPC - 10.0.0.0/16"]
 
-        subgraph VPC["VPC - 10.0.0.0/16"]
-
-            subgraph AZ1["Availability Zone 1"]
-                subgraph PUB1["Public Subnet - 10.0.1.0/24"]
-                    NAT["NAT Gateway"]
-                end
-
-                subgraph PRIV1["Private Subnet - 10.0.11.0/24"]
-                    EC2A["EC2 Instance 1<br/>Nginx"]
-                end
-            end
-
-            subgraph AZ2["Availability Zone 2"]
-                subgraph PUB2["Public Subnet - 10.0.2.0/24"]
-                end
-
-                subgraph PRIV2["Private Subnet - 10.0.12.0/24"]
-                    EC2B["EC2 Instance 2<br/>Nginx"]
-                end
-            end
-
-            ALB["Application Load Balancer<br/>Spans both public subnets"]
-            TG["Target Group"]
-            ASG["Auto Scaling Group<br/>Min: 2 | Desired: 2 | Max: 4"]
+        subgraph ALB_LAYER["Internet-facing Load Balancing"]
+            ALB["Application Load Balancer<br/>Associated with both public subnets"]
+            TG["Target Group<br/>HTTP - Port 80"]
+            ALB --> TG
         end
+
+        subgraph AZ1["Availability Zone 1"]
+            subgraph PUB1["Public Subnet 1 - 10.0.1.0/24"]
+                NAT["NAT Gateway"]
+            end
+
+            subgraph PRIV1["Private Subnet 1 - 10.0.11.0/24"]
+                EC2A["EC2 Instance 1<br/>Nginx"]
+            end
+        end
+
+        subgraph AZ2["Availability Zone 2"]
+            subgraph PUB2["Public Subnet 2 - 10.0.2.0/24"]
+                PUB2_INFO["Public subnet<br/>ALB network interface"]
+            end
+
+            subgraph PRIV2["Private Subnet 2 - 10.0.12.0/24"]
+                EC2B["EC2 Instance 2<br/>Nginx"]
+            end
+        end
+
+        ASG["Auto Scaling Group<br/>Min: 2 | Desired: 2 | Max: 4"]
     end
 
     USER --> IGW
     IGW --> ALB
-    ALB --> TG
+
     TG --> EC2A
     TG --> EC2B
+
+    ALB -. subnet association .-> PUB1
+    ALB -. subnet association .-> PUB2
 
     ASG -. manages .-> EC2A
     ASG -. manages .-> EC2B
 
-    EC2A -. outbound .-> NAT
-    EC2B -. outbound .-> NAT
+    EC2A -. outbound internet .-> NAT
+    EC2B -. outbound internet .-> NAT
     NAT --> IGW
 ```
 
