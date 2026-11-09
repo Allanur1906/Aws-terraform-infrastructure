@@ -65,7 +65,13 @@ flowchart TB
     EC2B -. outbound internet .-> NAT
     NAT --> IGW
 ```
+### Architecture Notes
 
+- The internet-facing ALB is deployed inside the VPC and associated with both public subnets.
+- The Target Group registers EC2 instances running Nginx and performs health checks. The ALB distributes incoming requests to healthy targets.
+- Both private subnets use a single NAT Gateway in AZ-1 for outbound internet connectivity. This is a cost-optimized design with a single point of failure for outbound connectivity.
+
+  
 
 Technologies Used
 
