@@ -9,49 +9,57 @@ The infrastructure hosts an Nginx web server on Amazon EC2 instances distributed
 All infrastructure resources are provisioned and managed through Terraform.
 
 
-
-
 ## Architecture
 
-The project uses the following AWS architecture:
+The infrastructure is deployed in AWS Stockholm (`eu-north-1`) across two Availability Zones.
 
 ```mermaid
 flowchart TB
-    User(["Internet Users"])
+    USER(["Internet Users"])
 
-    subgraph AWS["AWS Cloud - Stockholm (eu-north-1)"]
+    subgraph AWS["AWS Cloud - eu-north-1"]
         IGW["Internet Gateway"]
 
         subgraph VPC["VPC - 10.0.0.0/16"]
-            subgraph PUBLIC["Public Subnets"]
-                ALB["Application Load Balancer"]
-                NAT["NAT Gateway"]
+
+            subgraph AZ1["Availability Zone 1"]
+                subgraph PUB1["Public Subnet - 10.0.1.0/24"]
+                    NAT["NAT Gateway"]
+                end
+
+                subgraph PRIV1["Private Subnet - 10.0.11.0/24"]
+                    EC2A["EC2 Instance 1<br/>Nginx"]
+                end
             end
 
-            subgraph PRIVATE["Private Subnets"]
-                EC2A["EC2 Instance 1 - Nginx"]
-                EC2B["EC2 Instance 2 - Nginx"]
+            subgraph AZ2["Availability Zone 2"]
+                subgraph PUB2["Public Subnet - 10.0.2.0/24"]
+                end
+
+                subgraph PRIV2["Private Subnet - 10.0.12.0/24"]
+                    EC2B["EC2 Instance 2<br/>Nginx"]
+                end
             end
 
+            ALB["Application Load Balancer<br/>Spans both public subnets"]
             TG["Target Group"]
-            ASG["Auto Scaling Group"]
+            ASG["Auto Scaling Group<br/>Min: 2 | Desired: 2 | Max: 4"]
         end
     end
 
-    User --> IGW
+    USER --> IGW
     IGW --> ALB
     ALB --> TG
     TG --> EC2A
     TG --> EC2B
 
-    ASG -.-> EC2A
-    ASG -.-> EC2B
+    ASG -. manages .-> EC2A
+    ASG -. manages .-> EC2B
 
-    EC2A -. Outbound traffic .-> NAT
-    EC2B -. Outbound traffic .-> NAT
+    EC2A -. outbound .-> NAT
+    EC2B -. outbound .-> NAT
     NAT --> IGW
 ```
-
 
 
 Technologies Used
