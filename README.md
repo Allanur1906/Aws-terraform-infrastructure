@@ -8,37 +8,33 @@ The infrastructure hosts an Nginx web server on Amazon EC2 instances distributed
 
 All infrastructure resources are provisioned and managed through Terraform.
 
-Architecture
+
+
+
+## Architecture
 
 The project uses the following AWS architecture:
 
-
-
+```mermaid
 flowchart TB
-    User([Internet Users])
+    User(["Internet Users"])
 
-    subgraph AWS["AWS Cloud - eu-north-1 Stockholm"]
+    subgraph AWS["AWS Cloud - Stockholm (eu-north-1)"]
         IGW["Internet Gateway"]
 
         subgraph VPC["VPC - 10.0.0.0/16"]
-            
-            subgraph Public["Public Subnets"]
+            subgraph PUBLIC["Public Subnets"]
                 ALB["Application Load Balancer"]
                 NAT["NAT Gateway"]
             end
 
-            subgraph Private["Private Subnets"]
-                subgraph AZ1["Availability Zone 1"]
-                    EC2A["EC2 Instance 1<br/>Nginx"]
-                end
-
-                subgraph AZ2["Availability Zone 2"]
-                    EC2B["EC2 Instance 2<br/>Nginx"]
-                end
+            subgraph PRIVATE["Private Subnets"]
+                EC2A["EC2 Instance 1 - Nginx"]
+                EC2B["EC2 Instance 2 - Nginx"]
             end
 
-            ASG["Auto Scaling Group<br/>Min: 2 | Desired: 2 | Max: 4"]
             TG["Target Group"]
+            ASG["Auto Scaling Group"]
         end
     end
 
@@ -48,14 +44,13 @@ flowchart TB
     TG --> EC2A
     TG --> EC2B
 
-    ASG -. manages .-> EC2A
-    ASG -. manages .-> EC2B
+    ASG -.-> EC2A
+    ASG -.-> EC2B
 
-    EC2A --> NAT
-    EC2B --> NAT
+    EC2A -. Outbound traffic .-> NAT
+    EC2B -. Outbound traffic .-> NAT
     NAT --> IGW
-
-
+```
 
 
 
