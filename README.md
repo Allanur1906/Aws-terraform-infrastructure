@@ -12,30 +12,52 @@ Architecture
 
 The project uses the following AWS architecture:
 
-                       INTERNET
-                           |
-                           |
-                  INTERNET GATEWAY
-                           |
-                           |
-                    APPLICATION LB
-                       (HTTP:80)
-                           |
-                           |
-                      TARGET GROUP
-                       /         \
-                      /           \
-                     /             \
-               EC2 INSTANCE 1   EC2 INSTANCE 2
-                  NGINX             NGINX
-                     |                |
-              PRIVATE SUBNETS (2)
-                     |                |
-                AUTO SCALING GROUP
-                     |
-                 NAT GATEWAY
-                     |
-                INTERNET GATEWAY
+
+
+flowchart TB
+    User([Internet Users])
+
+    subgraph AWS["AWS Cloud - eu-north-1 Stockholm"]
+        IGW["Internet Gateway"]
+
+        subgraph VPC["VPC - 10.0.0.0/16"]
+            
+            subgraph Public["Public Subnets"]
+                ALB["Application Load Balancer"]
+                NAT["NAT Gateway"]
+            end
+
+            subgraph Private["Private Subnets"]
+                subgraph AZ1["Availability Zone 1"]
+                    EC2A["EC2 Instance 1<br/>Nginx"]
+                end
+
+                subgraph AZ2["Availability Zone 2"]
+                    EC2B["EC2 Instance 2<br/>Nginx"]
+                end
+            end
+
+            ASG["Auto Scaling Group<br/>Min: 2 | Desired: 2 | Max: 4"]
+            TG["Target Group"]
+        end
+    end
+
+    User --> IGW
+    IGW --> ALB
+    ALB --> TG
+    TG --> EC2A
+    TG --> EC2B
+
+    ASG -. manages .-> EC2A
+    ASG -. manages .-> EC2B
+
+    EC2A --> NAT
+    EC2B --> NAT
+    NAT --> IGW
+
+
+
+
 
 Technologies Used
 
